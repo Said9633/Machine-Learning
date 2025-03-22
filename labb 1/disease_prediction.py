@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
+from sklearn.ensemble import VotingClassifier
 
 
 class CardioData:
@@ -157,4 +158,29 @@ class CardioData:
 
             best_models[name] = self.tune_hyperparameters(Param_grid['model'], Param_grid['params'], X_train, y_train)
         return best_models
+    
+    def ensemble_model(self, df, best_models):
+
+        X = df.drop(columns=['cardio'])
+        y = df['cardio']
+
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+
+        ensemble = VotingClassifier(
+            estimators=[
+                ('lr', best_models['Logistic Regression']),
+                ('rf', best_models['Random Forest']),
+                ('SVM', best_models['SVM']),
+                ('knn', best_models['KNN'])
+            ],
+            voting='soft'
+        )
+
+        ensemble.fit(X_scaled, y)
+        y_pred = ensemble.predict(X_scaled)
+        print("Ensemble_modell: ")
+        print(f"Accuracy:{accuracy_score(y,y_pred):.4f}")
+        print("Classification Report:\n", classification_report(y, y_pred))
+        return ensemble
     
